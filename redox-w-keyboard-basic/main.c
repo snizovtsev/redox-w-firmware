@@ -4,6 +4,8 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <string.h>
+
 #include "redox-w.h"
 #include "nrf_drv_config.h"
 #include "app_error.h"
@@ -110,19 +112,6 @@ static void read_keys(uint8_t *row_stat)
 
 }
 
-static bool compare_keys(const uint8_t* first, const uint8_t* second,
-                         uint32_t size)
-{
-    for(int i=0; i < size; i++)
-    {
-        if (first[i] != second[i])
-        {
-          return false;
-        }
-    }
-    return true;
-}
-
 static bool empty_keys(const uint8_t* keys_buffer)
 {
     for(int i=0; i < ROWS; i++)
@@ -144,13 +133,14 @@ static void handle_inactivity(const uint8_t *keys_buffer)
         inactivity_ticks++;
         if (inactivity_ticks > INACTIVITY_THRESHOLD) {
             nrf_drv_rtc_disable(&rtc);
-            nrf_gpio_pin_set(C01);
-            nrf_gpio_pin_set(C02);
-            nrf_gpio_pin_set(C03);
-            nrf_gpio_pin_set(C04);
-            nrf_gpio_pin_set(C05);
-            nrf_gpio_pin_set(C06);
-            nrf_gpio_pin_set(C07);
+            nrf_gpio_pins_set(
+                (1UL << C01) |
+                (1UL << C02) |
+                (1UL << C03) |
+                (1UL << C04) |
+                (1UL << C05) |
+                (1UL << C06) |
+                (1UL << C07));
 
             inactivity_ticks = 0;
 
@@ -166,7 +156,7 @@ static void handle_send(const uint8_t* keys_buffer)
     static uint8_t keys_snapshot[ROWS] = {0};
     static uint32_t debounce_ticks = 0;
 
-    const bool no_change = compare_keys(keys_buffer, keys_snapshot, ROWS);
+    const bool no_change = !memcmp(keys_buffer, keys_snapshot, ROWS);
     if (no_change) {
         debounce_ticks++;
         // debouncing - send only if the keys state has been stable
@@ -179,9 +169,7 @@ static void handle_send(const uint8_t* keys_buffer)
     } else {
         // change detected, start over
         debounce_ticks = 0;
-        for (int k = 0; k < ROWS; k++) {
-            keys_snapshot[k] = keys_buffer[k];
-        }
+        memcpy(keys_snapshot, keys_buffer, ROWS);
     }
 }
 
