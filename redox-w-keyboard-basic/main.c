@@ -2,13 +2,18 @@
  * Either COMPILE_RIGHT or COMPILE_LEFT has to be defined from the make call to allow proper functionality
  */
 
+#include <stdbool.h>
+#include <stdint.h>
 #include "redox-w.h"
 #include "nrf_drv_config.h"
+#include "app_error.h"
+#include "app_uart.h"
 #include "nrf_gzll.h"
 #include "nrf_gpio.h"
 #include "nrf_delay.h"
 #include "nrf_drv_clock.h"
 #include "nrf_drv_rtc.h"
+#include "nrf_drv_uart.h"
 #include "nrf51_bitfields.h"
 #include "nrf51.h"
 
@@ -27,6 +32,8 @@ static uint8_t ack_payload[NRF_GZLL_CONST_MAX_PAYLOAD_LENGTH]; ///< Placeholder 
 #define DEBOUNCE 5
 // Mark as inactive after a number of ticks:
 #define INACTIVITY_THRESHOLD 500 // 0.5sec
+#define UART_TX_BUF_SIZE 256                         /**< UART TX buffer size. */
+#define UART_RX_BUF_SIZE 1                           /**< UART RX buffer size. */
 
 #ifdef COMPILE_LEFT
 static uint8_t channel_table[3]={4, 42, 77};
@@ -37,6 +44,14 @@ static uint8_t channel_table[3]={25, 63, 33};
 #ifdef COMPILE_DEBUG
 static uint8_t channel_table[3]={25, 63, 33};
 #endif
+
+
+/*****************************************************************************/
+/** Code */
+/*****************************************************************************/
+
+// Forward declarations
+static void uart_error_handle(app_uart_evt_t * p_event);
 
 
 // Setup switch pins with pullups
@@ -202,9 +217,42 @@ static void rtc_config(void)
     nrf_drv_rtc_enable(&rtc);
 }
 
-int main()
+// UART debug logging configuration
+static void uart_config(void)
 {
+    uint32_t err_code;
+    const app_uart_comm_params_t comm_params =
+    {
+        UART0_CONFIG_PSEL_RXD,
+        UART0_CONFIG_PSEL_TXD,
+        UART0_CONFIG_PSEL_RTS,
+        UART0_CONFIG_PSEL_CTS,
+        APP_UART_FLOW_CONTROL_DISABLED,
+        false,
+        UART_BAUDRATE_BAUDRATE_Baud115200
+    };
+
+    APP_UART_FIFO_INIT(&comm_params,
+                       UART_RX_BUF_SIZE,
+                       UART_TX_BUF_SIZE,
+                       uart_error_handle,
+                       APP_IRQ_PRIORITY_LOW,
+                       err_code);
+
+    APP_ERROR_CHECK(err_code);
+}
+
+int main(void)
+{
+#ifdef COMPILE_DEBUG
+    uart_config();
+    printf("Hello, kbd fans!\n\r");
+#endif
+
     // Initialize Gazell
+#ifdef COMPILE_DEBUG
+    printf("Configure Gazell...\n\r");
+#endif
     nrf_gzll_init(NRF_GZLL_MODE_DEVICE);
 
     // Attempt sending every packet up to 100 times
@@ -227,23 +275,54 @@ int main()
     nrf_gzll_enable();
 
     // Configure 32kHz xtal oscillator
+#ifdef COMPILE_DEBUG
+    printf("Configure 32kHz xtal oscillator...\n\r");
+#endif
     lfclk_config();
 
     // Configure RTC peripherals with ticks
+#ifdef COMPILE_DEBUG
+    printf("Configure RTC...\n\r");
+#endif
     rtc_config();
 
     // Configure all keys as inputs with pullups
+#ifdef COMPILE_DEBUG
+    printf("Configure GPIO...\n\r");
+#endif
     gpio_config();
 
     // Main loop, constantly sleep, waiting for RTC and gpio IRQs
+#ifdef COMPILE_DEBUG
+    printf("Well done!\n\r");
+#endif
     while(1)
     {
         __SEV();
         __WFE();
         __WFE();
     }
+#ifdef COMPILE_DEBUG
+    printf("Bye!\n\r");
+#endif
 }
 
+
+/*****************************************************************************/
+/** UART callback function definitions  */
+/*****************************************************************************/
+
+static void uart_error_handle(app_uart_evt_t * p_event)
+{
+    if (p_event->evt_type == APP_UART_COMMUNICATION_ERROR)
+    {
+        APP_ERROR_HANDLER(p_event->data.error_communication);
+    }
+    else if (p_event->evt_type == APP_UART_FIFO_ERROR)
+    {
+        APP_ERROR_HANDLER(p_event->data.error_code);
+    }
+}
 
 /*****************************************************************************/
 /** Gazell callback function definitions  */
