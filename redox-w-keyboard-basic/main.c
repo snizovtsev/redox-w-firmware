@@ -34,6 +34,10 @@ static uint8_t channel_table[3]={4, 42, 77};
 #ifdef COMPILE_RIGHT
 static uint8_t channel_table[3]={25, 63, 33};
 #endif
+#ifdef COMPILE_DEBUG
+static uint8_t channel_table[3]={25, 63, 33};
+#endif
+
 
 // Setup switch pins with pullups
 static void gpio_config(void)
@@ -211,8 +215,13 @@ int main()
     nrf_gzll_set_timeslot_period(900);
 
     // Addressing
+#ifndef COMPILE_DEBUG
     nrf_gzll_set_base_address_0(0x01020304);
     nrf_gzll_set_base_address_1(0x05060708);
+#else
+    nrf_gzll_set_base_address_0(0x04030201);
+    nrf_gzll_set_base_address_1(0x08070605);
+#endif
 
     // Enable Gazell to start sending over the air
     nrf_gzll_enable();

@@ -45,6 +45,26 @@
 
 #endif
 
+#ifdef COMPILE_DEBUG
+
+#define PIPE_NUMBER 1
+
+#define C01 30
+#define C02 16 // 0
+#define C03 17 // 2
+#define C04 18 // 3
+#define C05 19 // 4
+#define C06 5
+#define C07 6
+
+#define R01 19
+#define R02 20 // 22
+#define R03 21 // 23
+#define R04 22 // 28
+#define R05 23
+
+#endif
+
 #define COLUMNS 7
 #define ROWS 5
 

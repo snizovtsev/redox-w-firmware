@@ -112,7 +112,8 @@ default: $(BUILD_DIRECTORIES) all
 
 #building all targets
 all: $(OUTPUT_BINARY_DIRECTORY)/nrf51822_xxac-keyboard-left.hex  \
-     $(OUTPUT_BINARY_DIRECTORY)/nrf51822_xxac-keyboard-right.hex
+     $(OUTPUT_BINARY_DIRECTORY)/nrf51822_xxac-keyboard-right.hex \
+     $(OUTPUT_BINARY_DIRECTORY)/nrf51822_xxac-keyboard-debug.hex
 
 C_SOURCE_FILE_NAMES = $(notdir $(C_SOURCE_FILES))
 C_PATHS = $(call remduplicates, $(dir $(C_SOURCE_FILES) ) )
@@ -137,6 +138,7 @@ $(BUILD_DIRECTORIES):
 
 $(OBJECT_DIRECTORY)/main-keyboard-left.o: CFLAGS += -DCOMPILE_LEFT
 $(OBJECT_DIRECTORY)/main-keyboard-right.o: CFLAGS += -DCOMPILE_RIGHT
+$(OBJECT_DIRECTORY)/main-keyboard-debug.o: CFLAGS += -DCOMPILE_DEBUG
 
 $(OBJECT_DIRECTORY)/main-%.o: $(abspath ../../main.c)
 	@echo Compiling file: $(notdir $<)

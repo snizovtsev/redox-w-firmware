@@ -89,8 +89,13 @@ int main(void)
     nrf_gzll_set_timeslot_period(900);
 
     // Addressing
+#if 0
     nrf_gzll_set_base_address_0(0x01020304);
     nrf_gzll_set_base_address_1(0x05060708);
+#else
+    nrf_gzll_set_base_address_0(0x04030201);
+    nrf_gzll_set_base_address_1(0x08070605);
+#endif
 
     // Enable Gazell to start sending over the air
     nrf_gzll_enable();
