@@ -1,15 +1,14 @@
 # -----------------------------------
 # -------- OPENOCD SERVER -----------
 # -----------------------------------
-FROM ubuntu:16.04
+FROM ubuntu:20.04
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    openocd
+    openocd \
+ && rm -rf /var/lib/apt/lists/*
 
 # Expose port
-EXPOSE 4444
+EXPOSE 3333 4444/tcp
 
-CMD openocd -s /usr/local/Cellar/open-ocd/0.8.0/share/openocd/scripts/ \
-    -f interface/stlink-v2.cfg \
-    -f target/nrf51_stlink.tcl
+ENTRYPOINT [ "openocd" ]

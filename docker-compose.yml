@@ -8,9 +8,9 @@ services:
     image: redox-fw-openocd:latest
     network_mode: host
     volumes:
-      - ./:/usr/src/nRF5_SDK_11/redox-w-firmware
-    devices:
-      - "/dev/bus"
+      - ./:/nRF5_SDK/redox-w-firmware
+    privileged: true
+    command: -f /nRF5_SDK/redox-w-firmware/nrf-stlink.cfg
   # Nordic SDK toolchain
   toolchain:
     build:
@@ -18,7 +18,8 @@ services:
         dockerfile: Dockerfile_toolchain
     image: redox-fw-toolchain:latest
     network_mode: host
+    command: sleep inf
     volumes:
-      - ./:/usr/src/nRF5_SDK_11/redox-w-firmware
+      - ./:/nRF5_SDK/redox-w-firmware
     depends_on:
         - openocd

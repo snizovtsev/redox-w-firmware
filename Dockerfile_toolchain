@@ -1,26 +1,26 @@
 # -----------------------------------
 # ------ NORDIX SDK TOOLCHAIN -------
 # -----------------------------------
-FROM ubuntu:16.04
+FROM ubuntu:20.04
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     make \
     telnet \
     gcc-arm-none-eabi \
+    gdb-multiarch \
     wget \
-    zip
+    libarchive-tools \
+ && rm -rf /var/lib/apt/lists/*
 
 # Download and install OpenOCD
-RUN wget https://developer.nordicsemi.com/nRF5_SDK/nRF5_SDK_v11.x.x/nRF5_SDK_11.0.0_89a8197.zip && \
-    unzip nRF5_SDK_11.0.0_89a8197.zip -d /usr/src/nRF5_SDK_11 && \
-    rm nRF5_SDK_11.0.0_89a8197.zip
+ARG SDK=https://developer.nordicsemi.com/nRF5_SDK/nRF5_SDK_v12.x.x/nRF5_SDK_12.3.0_d7731ad.zip
+RUN wget -qO- "$SDK" | bsdtar -xvf- -C /opt \
+ && mv /opt/nRF5_SDK_12.3.0_d7731ad /nRF5_SDK
 
 # Workdir setting
-WORKDIR /usr/src/nRF5_SDK_11
+WORKDIR /nRF5_SDK
 
 # Toolchain setup
-RUN sed -i "s/\/usr\/local\/gcc-arm-none-eabi-4_9-2015q1/\/usr\//" \
+RUN sed -i "s/\/usr\/local\/gcc-arm-none-eabi-4_9-2015q3/\/usr/" \
     components/toolchain/gcc/Makefile.posix
-
-CMD tail -f /dev/null

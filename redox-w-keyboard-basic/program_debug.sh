@@ -15,14 +15,8 @@ du -b $HEX
 echo
 echo '============================= PROGRAMMING ============================='
 {
-	echo "reset halt";
-	sleep 0.1;
-	echo program $HEX verify
-	sleep 11;
-	echo "reset";
-	sleep 0.1;
-	exit;
-
+	echo "program $HEX verify reset"
+	sleep 2
 } | telnet 127.0.0.1 4444
 
 echo

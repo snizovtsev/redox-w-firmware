@@ -7,7 +7,7 @@
 #include <string.h>
 
 #include "redox-w.h"
-#include "nrf_drv_config.h"
+#include "sdk_config.h"
 #include "app_error.h"
 #include "app_uart.h"
 #include "nrf_gzll.h"
@@ -24,7 +24,7 @@
 /** Configuration */
 /*****************************************************************************/
 
-const nrf_drv_rtc_t rtc = NRF_DRV_RTC_INSTANCE(1); /**< Declaring an instance of nrf_drv_rtc for RTC1. */
+const nrf_drv_rtc_t rtc = NRF_DRV_RTC_INSTANCE(0); /**< Declaring an instance of nrf_drv_rtc for RTC1. */
 
 
 // Data and acknowledgement payloads
@@ -133,7 +133,7 @@ static void handle_inactivity(const uint8_t *keys_buffer)
         inactivity_ticks++;
         if (inactivity_ticks > INACTIVITY_THRESHOLD) {
             nrf_drv_rtc_disable(&rtc);
-            nrf_gpio_pins_set(
+            nrf_gpio_port_out_set(NRF_GPIO,
                 (1UL << C01) |
                 (1UL << C02) |
                 (1UL << C03) |
@@ -195,8 +195,19 @@ static void lfclk_config(void)
 // RTC peripheral configuration
 static void rtc_config(void)
 {
+    enum {
+        RTC_FREQUENCY          = 1000,
+        RTC_MAXIMUM_LATENCY_US = 2000,
+    };
+    static nrf_drv_rtc_config_t config = {
+        .prescaler          = RTC_FREQ_TO_PRESCALER(RTC_FREQUENCY),
+        .interrupt_priority = APP_IRQ_PRIORITY_LOW,
+        .reliable           = false,
+        .tick_latency       = RTC_US_TO_TICKS(RTC_MAXIMUM_LATENCY_US, RTC_FREQUENCY),
+    };
+
     //Initialize RTC instance
-    nrf_drv_rtc_init(&rtc, NULL, tick);
+    nrf_drv_rtc_init(&rtc, &config, tick);
 
     //Enable tick event & interrupt
     nrf_drv_rtc_tick_enable(&rtc, true);
@@ -209,15 +220,15 @@ static void rtc_config(void)
 static void uart_config(void)
 {
     uint32_t err_code;
-    const app_uart_comm_params_t comm_params =
+    static const app_uart_comm_params_t comm_params =
     {
-        UART0_CONFIG_PSEL_RXD,
-        UART0_CONFIG_PSEL_TXD,
-        UART0_CONFIG_PSEL_RTS,
-        UART0_CONFIG_PSEL_CTS,
-        APP_UART_FLOW_CONTROL_DISABLED,
-        false,
-        UART_BAUDRATE_BAUDRATE_Baud115200
+        .rx_pin_no    = 11,
+        .tx_pin_no    =  9,
+        .rts_pin_no   =  8,
+        .cts_pin_no   = 10,
+        .flow_control = APP_UART_FLOW_CONTROL_DISABLED,
+        .use_parity   = false,
+        .baud_rate    = UART_BAUDRATE_BAUDRATE_Baud115200
     };
 
     APP_UART_FIFO_INIT(&comm_params,
@@ -234,7 +245,7 @@ int main(void)
 {
 #ifdef COMPILE_DEBUG
     uart_config();
-    printf("Hello, kbd fans!\n\r");
+    printf("\n\rHello, kbd fans!\n\r");
 #endif
 
     // Initialize Gazell
@@ -251,13 +262,13 @@ int main(void)
     nrf_gzll_set_timeslot_period(900);
 
     // Addressing
-#ifndef COMPILE_DEBUG
-    nrf_gzll_set_base_address_0(0x01020304);
-    nrf_gzll_set_base_address_1(0x05060708);
-#else
+//#ifndef COMPILE_DEBUG
+//    nrf_gzll_set_base_address_0(0x01020304);
+//    nrf_gzll_set_base_address_1(0x05060708);
+//#else
     nrf_gzll_set_base_address_0(0x04030201);
     nrf_gzll_set_base_address_1(0x08070605);
-#endif
+//#endif
 
     // Enable Gazell to start sending over the air
     nrf_gzll_enable();
@@ -268,17 +279,17 @@ int main(void)
 #endif
     lfclk_config();
 
-    // Configure RTC peripherals with ticks
-#ifdef COMPILE_DEBUG
-    printf("Configure RTC...\n\r");
-#endif
-    rtc_config();
-
     // Configure all keys as inputs with pullups
 #ifdef COMPILE_DEBUG
     printf("Configure GPIO...\n\r");
 #endif
     gpio_config();
+
+    // Configure RTC peripherals with ticks
+#ifdef COMPILE_DEBUG
+    printf("Configure RTC...\n\r");
+#endif
+    rtc_config();
 
     // Main loop, constantly sleep, waiting for RTC and gpio IRQs
 #ifdef COMPILE_DEBUG

@@ -1,4 +1,4 @@
-PROJECT_NAME := redow-w-keyboard-basic
+PROJECT_NAME := redox-w-keyboard-basic
 
 export OUTPUT_FILENAME
 
@@ -42,7 +42,6 @@ $(SDK_ROOT)/components/libraries/util/app_error_weak.c \
 $(SDK_ROOT)/components/libraries/fifo/app_fifo.c \
 $(SDK_ROOT)/components/libraries/uart/retarget.c \
 $(SDK_ROOT)/components/libraries/uart/app_uart_fifo.c \
-$(SDK_ROOT)/components/drivers_nrf/delay/nrf_delay.c \
 $(SDK_ROOT)/components/drivers_nrf/clock/nrf_drv_clock.c \
 $(SDK_ROOT)/components/libraries/util/app_util_platform.c \
 $(SDK_ROOT)/components/drivers_nrf/common/nrf_drv_common.c \
@@ -50,20 +49,20 @@ $(SDK_ROOT)/components/drivers_nrf/rtc/nrf_drv_rtc.c \
 $(SDK_ROOT)/components/drivers_nrf/uart/nrf_drv_uart.c
 
 #assembly files common to all targets
-ASM_SOURCE_FILES  = $(SDK_ROOT)/components/toolchain/gcc/gcc_startup_nrf51.s
+ASM_SOURCE_FILES  = $(SDK_ROOT)/components/toolchain/gcc/gcc_startup_nrf51.S
 
 #assembly files common to all targets
-LIBS  = $(SDK_ROOT)/components/properitary_rf/gzll/gcc/gzll_gcc.a
+LIBS  = $(SDK_ROOT)/components/proprietary_rf/gzll/gcc/gzll_nrf51_gcc.a
 
 #includes common to all targets
 INC_PATHS  = -I$(abspath ../../config)
+INC_PATHS += -I$(SDK_ROOT)/components
 INC_PATHS += -I$(SDK_ROOT)/components/device
-INC_PATHS += -I$(SDK_ROOT)/components/toolchain/CMSIS/Include
-INC_PATHS += -I$(SDK_ROOT)/components/properitary_rf/gzll
+INC_PATHS += -I$(SDK_ROOT)/components/toolchain/cmsis/include
+INC_PATHS += -I$(SDK_ROOT)/components/proprietary_rf/gzll
 INC_PATHS += -I$(SDK_ROOT)/components/drivers_nrf/hal
 INC_PATHS += -I$(SDK_ROOT)/components/toolchain/gcc
 INC_PATHS += -I$(SDK_ROOT)/components/drivers_nrf/delay
-INC_PATHS += -I$(SDK_ROOT)/examples/bsp
 INC_PATHS += -I$(SDK_ROOT)/components/toolchain
 INC_PATHS += -I$(SDK_ROOT)/components/drivers_nrf/nrf_soc_nosd
 INC_PATHS += -I$(SDK_ROOT)/components/drivers_nrf/common
@@ -71,7 +70,8 @@ INC_PATHS += -I$(SDK_ROOT)/components/drivers_nrf/clock
 INC_PATHS += -I$(SDK_ROOT)/components/libraries/util
 INC_PATHS += -I$(SDK_ROOT)/components/libraries/uart
 INC_PATHS += -I$(SDK_ROOT)/components/libraries/fifo
-INC_PATHS += -I$(SDK_ROOT)/components/drivers_nrf/config
+INC_PATHS += -I$(SDK_ROOT)/components/libraries/log
+INC_PATHS += -I$(SDK_ROOT)/components/libraries/log/src
 INC_PATHS += -I$(SDK_ROOT)/components/drivers_nrf/rtc
 INC_PATHS += -I$(SDK_ROOT)/components/drivers_nrf/uart
 
@@ -85,6 +85,7 @@ BUILD_DIRECTORIES := $(sort $(OBJECT_DIRECTORY) $(OUTPUT_BINARY_DIRECTORY) $(LIS
 
 #flags common to all targets
 CFLAGS  = -DNRF51
+CFLAGS += -DNRF51822
 CFLAGS += -DGAZELL_PRESENT
 CFLAGS += -DBOARD_CUSTOM
 CFLAGS += -DBSP_DEFINES_ONLY
@@ -130,10 +131,10 @@ C_OBJECTS = $(addprefix $(OBJECT_DIRECTORY)/, $(C_SOURCE_FILE_NAMES:.c=.o) )
 
 ASM_SOURCE_FILE_NAMES = $(notdir $(ASM_SOURCE_FILES))
 ASM_PATHS = $(call remduplicates, $(dir $(ASM_SOURCE_FILES) ))
-ASM_OBJECTS = $(addprefix $(OBJECT_DIRECTORY)/, $(ASM_SOURCE_FILE_NAMES:.s=.o) )
+ASM_OBJECTS = $(addprefix $(OBJECT_DIRECTORY)/, $(ASM_SOURCE_FILE_NAMES:.S=.o) )
 
 vpath %.c $(C_PATHS)
-vpath %.s $(ASM_PATHS)
+vpath %.S $(ASM_PATHS)
 
 OBJECTS = $(C_OBJECTS) $(ASM_OBJECTS)
 
@@ -163,7 +164,7 @@ $(OBJECT_DIRECTORY)/%.o: %.c
 	$(NO_ECHO)$(CC) $(CFLAGS) $(INC_PATHS) -c -o $@ $<
 
 # Assemble files
-$(OBJECT_DIRECTORY)/%.o: %.s
+$(OBJECT_DIRECTORY)/%.o: %.S
 	@echo Assembly file: $(notdir $<)
 	$(NO_ECHO)$(CC) $(ASMFLAGS) $(INC_PATHS) -c -o $@ $<
 
